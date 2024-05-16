@@ -14,6 +14,7 @@ import {
     getDoc
 } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
 
+// configuration for the firebase
 const firebaseConfig = {
     apiKey: "AIzaSyAwkyZyBWgk49t2dskPvgQQAar1UhPOBnI",
     authDomain: "movie-review-aad64.firebaseapp.com",
@@ -23,15 +24,19 @@ const firebaseConfig = {
     appId: "1:725251961867:web:06448fd848ac96ab73830e"
 };
 
+// initialize the firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore();
 
+// collection information
 const movieCollectionRef = collection(db, "movie-review");
 
+// toggle the form visiblity
 function toggleAddReviewForm() {
     const form = document.querySelector(".add-movie-review");
     const header = document.getElementById("add-review-header");
 
+    // change the inner text of the button based on the active state
     if (header.innerHTML === "Cancel") {
         form.classList.add("form-inactive");
         header.innerHTML = "Add Review";
@@ -42,9 +47,11 @@ function toggleAddReviewForm() {
     }
 }
 
+// add the event listener for the button
 document.getElementById("add-review-header").addEventListener('click', toggleAddReviewForm);
 document.getElementById("cancel-btn").addEventListener('click', toggleAddReviewForm);
 
+// add the movies details into the UI based on their sorting method.
 function renderMovies(sortValue) {
 
     const sortBy = sortValue || "movieTitle"
@@ -71,6 +78,7 @@ function renderMovies(sortValue) {
                 </div>`;
         });
 
+        // event listner for the buttons present in movie review items
         document.querySelectorAll('.delete').forEach(button => {
             button.addEventListener('click', async (e) => {
                 await deleteDoc(doc(db, 'movie-review', e.target.dataset.id));
@@ -85,13 +93,16 @@ function renderMovies(sortValue) {
     });
 }
 
+// on edit activate the form with the details in the textfields
 async function editMovieReview(docId) {
+    // check for doc id and fetch the data
     const docRef = doc(db, 'movie-review', docId);
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
         const movie = docSnap.data();
 
+        // populate the data into the textfields
         document.getElementById("movieTitle").value = movie.movieTitle;
         document.getElementById("movieDescription").value = movie.movieDescription;
         document.getElementById("movieDirector").value = movie.movieDirector;
@@ -118,7 +129,7 @@ async function addOrUpdateMovieReview(event) {
         movieDescription: document.getElementById("movieDescription").value,
         movieDirector: document.getElementById("movieDirector").value,
         movieImage: document.getElementById("movieImage").value,
-        movieRating: +document.getElementById("movieRating").value
+        movieRating: +document.getElementById("movieRating").value % 6
     };
 
 
@@ -131,7 +142,11 @@ async function addOrUpdateMovieReview(event) {
         document.getElementById("add-review-btn").textContent = "Add Review";
     }
 
-    document.querySelectorAll("input").forEach(input => input.value = "");
+    document.getElementById("movieTitle").value = "";
+    document.getElementById("movieDescription").value = "";
+    document.getElementById("movieDirector").value = "";
+    document.getElementById("movieImage").value = "";
+    document.getElementById("movieRating").value = "";
     toggleAddReviewForm();
 }
 
