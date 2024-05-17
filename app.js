@@ -1,6 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
 import {
-    Firestore,
     getDocs,
     getFirestore,
     onSnapshot,
@@ -14,7 +13,7 @@ import {
     getDoc
 } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
 
-// configuration for the firebase
+// Firebase configuration
 const firebaseConfig = {
     apiKey: "AIzaSyAwkyZyBWgk49t2dskPvgQQAar1UhPOBnI",
     authDomain: "movie-review-aad64.firebaseapp.com",
@@ -24,20 +23,20 @@ const firebaseConfig = {
     appId: "1:725251961867:web:06448fd848ac96ab73830e"
 };
 
-// initialize the firebase
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore();
 
-// collection information
+// Reference to the movie collection
 const movieCollectionRef = collection(db, "movie-review");
 
-// toggle the form visiblity
+// Function to toggle the form visibility
 function toggleAddReviewForm() {
     const form = document.querySelector(".add-movie-review");
     const header = document.getElementById("add-review-header");
 
-    // change the inner text of the button based on the active state
     if (header.innerHTML === "Cancel") {
+        form.reset();
         form.classList.add("form-inactive");
         header.innerHTML = "Add Review";
     } else {
@@ -47,19 +46,16 @@ function toggleAddReviewForm() {
     }
 }
 
-// add the event listener for the button
+// Event listeners for toggling the form
 document.getElementById("add-review-header").addEventListener('click', toggleAddReviewForm);
 document.getElementById("cancel-btn").addEventListener('click', toggleAddReviewForm);
 
-// add the movies details into the UI based on their sorting method.
+// Function to render movies based on sorting method
 function renderMovies(sortValue) {
-
-    const sortBy = sortValue || "movieTitle"
-
+    const sortBy = sortValue || "movieTitle";
     const q = query(movieCollectionRef, orderBy(sortBy));
     onSnapshot(q, (snapshot) => {
-
-        let movies = document.querySelector('#all-movies');
+        const movies = document.querySelector('#all-movies');
         movies.innerHTML = "";
 
         snapshot.forEach(doc => {
@@ -72,13 +68,14 @@ function renderMovies(sortValue) {
                         <p>${movie.movieDescription}</p>
                         <h3> Director: ${movie.movieDirector}</h3>
                         <h3>Rating: ${movie.movieRating}/5</h3>
+                        <h3>Release Date: ${new Date(movie.movieReleaseDate).toLocaleDateString()}</h3>
                         <button class="edit" data-id="${doc.id}">Edit</button>
                         <button class="delete" data-id="${doc.id}">Delete</button>
                     </div>
                 </div>`;
         });
 
-        // event listner for the buttons present in movie review items
+        // Event listeners for delete and edit buttons
         document.querySelectorAll('.delete').forEach(button => {
             button.addEventListener('click', async (e) => {
                 await deleteDoc(doc(db, 'movie-review', e.target.dataset.id));
@@ -93,73 +90,63 @@ function renderMovies(sortValue) {
     });
 }
 
-// on edit activate the form with the details in the textfields
+// Function to edit a movie review
 async function editMovieReview(docId) {
-    // check for doc id and fetch the data
     const docRef = doc(db, 'movie-review', docId);
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
         const movie = docSnap.data();
-
-        // populate the data into the textfields
         document.getElementById("movieTitle").value = movie.movieTitle;
         document.getElementById("movieDescription").value = movie.movieDescription;
         document.getElementById("movieDirector").value = movie.movieDirector;
         document.getElementById("movieImage").value = movie.movieImage;
         document.getElementById("movieRating").value = movie.movieRating;
+        document.getElementById("movieReleaseDate").value = movie.movieReleaseDate;
         toggleAddReviewForm();
 
         currentMode = "update";
         selectedDocId = docId;
-
         document.getElementById("add-review-btn").textContent = "Update Review";
-
     } else {
         console.log("No such document!");
     }
 }
 
+// Function to add or update a movie review
 async function addOrUpdateMovieReview(event) {
     event.preventDefault();
-    let docRef;
 
     const movieData = {
         movieTitle: document.getElementById("movieTitle").value,
         movieDescription: document.getElementById("movieDescription").value,
         movieDirector: document.getElementById("movieDirector").value,
         movieImage: document.getElementById("movieImage").value,
-        movieRating: +document.getElementById("movieRating").value % 6
+        movieReleaseDate: document.getElementById("movieReleaseDate").value,
+        movieRating: +document.getElementById("movieRating").value % 6,
     };
 
-
     if (currentMode === "add") {
-        docRef = await addDoc(movieCollectionRef, movieData);
-
+        await addDoc(movieCollectionRef, movieData);
     } else if (currentMode === "update" && selectedDocId) {
-        docRef = await updateDoc(doc(db, 'movie-review', selectedDocId), movieData);
+        await updateDoc(doc(db, 'movie-review', selectedDocId), movieData);
         currentMode = "add";
         document.getElementById("add-review-btn").textContent = "Add Review";
     }
 
-    document.getElementById("movieTitle").value = "";
-    document.getElementById("movieDescription").value = "";
-    document.getElementById("movieDirector").value = "";
-    document.getElementById("movieImage").value = "";
-    document.getElementById("movieRating").value = "";
+    document.querySelector(".add-movie-review").reset();
     toggleAddReviewForm();
 }
 
-
-// sort by fucntionality
-function sort() {
-    let sortValue = document.getElementById("sort").value;
-    renderMovies(sortValue)
-}
-
+// Global variables to handle add and edit mode
 let currentMode = "add";
 let selectedDocId = null;
 
-document.getElementById("add-review-btn").addEventListener('click', addOrUpdateMovieReview);
-document.getElementById("sort").addEventListener('change', sort);
-renderMovies("movieTitle");
+// Event listener for adding or updating movie reviews
+document.querySelector(".add-movie-review").addEventListener("submit", addOrUpdateMovieReview);
+
+// Event listener for sorting
+document.querySelector('#sort').addEventListener('change', (e) => renderMovies(e.target.value));
+
+// Initial render of movies
+renderMovies();
