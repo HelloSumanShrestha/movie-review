@@ -36,6 +36,7 @@ function toggleAddReviewForm() {
     const header = document.getElementById("add-review-header");
 
     if (header.innerHTML === "Cancel") {
+        document.getElementById("add-review-btn").textContent = "Add Review";
         form.reset();
         form.classList.add("form-inactive");
         header.innerHTML = "Add Review";
